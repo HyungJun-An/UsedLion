@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상품 등록</title>
+<style>
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  body {
+    background-color: #fdf1dc;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    margin: 3rem auto;
+    box-sizing: border-box;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  label {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="file"],
+  textarea,
+  select {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .image-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 0.5rem;
+  }
+
+  .image-preview-item {
+    text-align: center;
+    width: 120px;
+  }
+
+  .image-preview-item img {
+    max-width: 100%;
+    max-height: 100px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+  }
+
+  .button-group {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .button-group button,
+  .button-group a {
+    background-color: #ff8a3d;
+    color: white;
+    padding: 10px 22px;
+    font-size: 15px;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    text-align: center;
+  }
+
+  .button-group button:hover,
+  .button-group a:hover {
+    background-color: #e87b2e;
+  }
+</style>
+
+
+</head>
+<body>
+  <div class="container d-flex justify-content-center align-items-center flex-column p-3">
+    <div class="glass-card">
+      <h2 class="text-center mb-4">📦 상품 등록</h2>
+      <form
+        th:action="${update} ? @{/post/{id}(id=${post.postId})} : @{/post/create}"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <!-- PUT 방식 흉내 -->
+        <input type="hidden" name="_method" th:value="${update} ? 'put' : 'post'" />
+
+        <div class="form-group">
+          <label for="title">제목</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            th:value="${update} ? ${post.title} : ''"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="price">가격</label>
+          <input
+            type="number"
+            id="price"
+            name="price"
+            th:value="${update} ? ${post.price} : ''"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="content">내용</label>
+          <textarea
+            id="content"
+            name="content"
+            rows="5"
+            required
+            th:text="${update} ? ${post.content} : ''"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="status">판매 상태</label>
+          <select id="status" name="status" required>
+            <option value="ONSALE">판매중</option>
+            <option value="RESERVED">예약중</option>
+            <option value="SOLDOUT">판매완료</option>
+          </select>
+        </div>
+
+        <div th:if="${update}" class="form-group">
+          <h4>기존 이미지</h4>
+          <div class="image-preview">
+            <div th:each="img, iterStat : ${imageList}" class="image-preview-item">
+              <img th:src="'data:image/jpeg;base64,' + ${img}" alt="기존 이미지" />
+              <label>
+                <input
+                  type="checkbox"
+                  name="deleteImages"
+                  th:value="${iterStat.index}"
+                />
+                삭제
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="file">새 이미지 첨부</label>
+          <input type="file" id="file" name="file" accept="image/*" multiple />
+        </div>
+
+        <div class="button-group">
+          <a href="/dashboard">⬅ 돌아가기</a>
+          <button
+            type="submit"
+            th:text="${update} ? '수정 완료' : '작성 완료'"
+          ></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

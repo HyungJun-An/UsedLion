@@ -1,0 +1,106 @@
+<!-- layout.html with Bootstrap 5 -->
+<!DOCTYPE html>
+<html
+  lang="en"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title layout:title-pattern="$CONTENT_TITLE - UsedLion">UsedLion</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
+
+  <body
+    class="d-flex flex-column min-vh-100"
+    style="
+      height: 100%;
+      font-family: 'Nanum Gothic', sans-serif;
+      background-color: #fef7eb;
+    "
+  >
+    <!-- HEADER -->
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top px-4 py-2"
+      th:if="${hideHeader == null or !hideHeader}"
+    >
+      <div class="container-fluid">
+        <a class="navbar-brand fw-bold custom-brand" href="/dashboard">
+          <img
+            src="/static/assets/img/usedlion_kor.png"
+            alt="UsedLion Title"
+            style="height: 40px"
+          />
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/post/create">상품 등록</a>
+            <a th:href="@{/chat/{postId}(postId=1)}" class="btn btn-primary">채팅 라운지</a>
+            <a class="nav-link d-inline" href="/profile">프로필</a>
+            <a class="nav-link" href="/logout">로그아웃</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main layout:fragment="content" class="container my-4 flex-grow-1">
+      <p>🌱 Default layout content</p>
+    </main>
+
+    <!-- FOOTER -->
+    <div th:if="${hideFooter == null or !hideFooter}" layout:fragment="footer">
+      <footer class="bg-light text-muted border-top py-4 mt-auto">
+        <div class="container">
+          <div class="d-flex flex-column">
+            <div class="mb-3">
+              <strong>© 2025 중고로사자. All rights reserved.</strong><br />
+              <strong>(주)유즈드라이언</strong><br />
+              <b>대표</b> 회고4팀 | 사업자번호: 123-45-67890<br />
+              <b>통신판매업신고번호</b> 제2025-멋사-0001호<br />
+              <b>호스팅 사업자</b> Juan's Web Service(JWS)<br />
+              <b>주소</b> 멋쟁이사자처럼 소속<br />
+              <b>이메일</b> cs@usedlion.online
+            </div>
+            <div class="text-start">
+              <a href="#" class="text-reset me-3">이용약관</a>
+              <a href="#" class="text-reset me-3">개인정보처리방침</a>
+              <a href="#" class="text-reset me-3">운영정책</a>
+              <a href="#" class="text-reset">이용자보호 비전과 계획</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

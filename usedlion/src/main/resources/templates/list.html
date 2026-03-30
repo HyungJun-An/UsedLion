@@ -1,0 +1,36 @@
+<!-- templates/list.html -->
+<div th:fragment="replyList (newReply, replies)">
+  <h2>댓글 (<span th:text="${#lists.size(replies)}"></span>개)</h2>
+
+  <!-- 댓글 작성 폼 -->
+  <form
+    th:action="@{/replies/post/{postId}(postId=${newReply.postId})}"
+    th:object="${newReply}"
+    method="post"
+  >
+    <!-- 오타 없이 postId -->
+    <input type="hidden" th:field="*{postId}" />
+    <textarea
+      th:field="*{content}"
+      placeholder="댓글을 입력하세요"
+      required
+    ></textarea>
+    <button type="submit">등록</button>
+  </form>
+
+  <hr />
+
+  <!-- 댓글 목록 -->
+  <ul>
+    <li th:each="reply : ${replies}">
+      <span th:text="${reply.content}">댓글 내용</span>
+      <!-- 수정 링크: 페이지 이동 대신 모달 열기 -->
+      [<a
+        href="#"
+        th:attr="onclick='openEditModal(' + ${reply.replyId} + '); return false;'"
+      >
+        수정 </a
+      >] [<a th:href="@{/replies/delete/{id}(id=${reply.replyId})}">삭제</a>]
+    </li>
+  </ul>
+</div>

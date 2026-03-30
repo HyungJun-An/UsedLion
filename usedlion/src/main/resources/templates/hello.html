@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hello Page</title>
+  </head>
+  <style>
+    .table-container {
+      height: 1000px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .search-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .search-container input[type="text"] {
+      padding: 8px;
+      margin-right: 10px;
+      width: 300px;
+    }
+
+    .search-container button {
+      padding: 8px 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #filterToggle {
+      background-color: #007bff;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    #filterMenu {
+      display: none;
+      background-color: #f4f4f4;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 10px;
+      margin-top: 10px;
+      width: 200px;
+      position: absolute;
+    }
+
+    #filterMenu label {
+      display: block;
+      padding: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #filterMenu label:hover {
+      background-color: #007bff;
+      color: white;
+    }
+
+    #searchInput {
+      width: 300px;
+      padding: 8px;
+    }
+    .sort-icon {
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .sort-icon:hover {
+      transform: scale(3);
+      color: #007bff;
+    }
+
+    .sort-icon:hover {
+      cursor: pointer;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document
+        .getElementById("filterToggle")
+        .addEventListener("click", function () {
+          const filterMenu = document.getElementById("filterMenu");
+          filterMenu.style.display =
+            filterMenu.style.display === "none" ? "block" : "none";
+        });
+
+      const filterInputs = document.querySelectorAll('input[name="filter"]');
+      filterInputs.forEach((input) => {
+        input.addEventListener("change", function () {
+          const filterMenu = document.getElementById("filterMenu");
+          filterMenu.style.display = "none";
+        });
+      });
+    });
+    function search() {
+      const searchInput = document.getElementById("searchInput").value;
+      const selectedFilter = document.querySelector(
+        'input[name="filter"]:checked'
+      );
+
+      if (selectedFilter && searchInput.trim() !== "") {
+        const filterValue = selectedFilter.value;
+        window.location.href = `/post/search/detail?${filterValue}=${searchInput}`;
+      } else {
+        alert("검색어를 입력하세요");
+      }
+    }
+    function clearPage() {
+      document.getElementById("searchInput").value = "";
+      const filterInputs = document.querySelectorAll('input[name="filter"]');
+      filterInputs.forEach((input) => {
+        input.checked = false;
+      });
+      window.location.href = "/hello";
+    }
+  </script>
+  <script>
+    let sortDirections = [true, true, true, true];
+
+    function sortTable(columnIndex) {
+      const table = document.getElementById("postTable");
+      const tbody = table.tBodies[0];
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const asc = sortDirections[columnIndex];
+
+      rows.sort((a, b) => {
+        const cellA = a.children[columnIndex].innerText.trim();
+        const cellB = b.children[columnIndex].innerText.trim();
+
+        if (!isNaN(cellA) && !isNaN(cellB)) {
+          return asc ? cellA - cellB : cellB - cellA;
+        }
+        return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+      });
+
+      rows.forEach((row) => tbody.appendChild(row));
+
+      document.querySelectorAll(".sort-icon").forEach((el, i) => {
+        el.textContent = i === columnIndex ? (asc ? "▲" : "▼") : "↕";
+      });
+
+      sortDirections[columnIndex] = !asc;
+    }
+  </script>
+  <body>
+    <h1>안녕하세요, <span th:text="${username}">이름</span> 님!</h1>
+
+    <a th:href="@{/post/create}">
+      <button
+        style="
+          padding: 8px 16px;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        "
+      >
+        게시글 작성
+      </button>
+    </a>
+    <h2>게시판 글 목록</h2>
+    <div class="search-container">
+      <button id="filterToggle">조건</button>
+      <input type="text" id="searchInput" placeholder="검색어 입력" />
+      <button onclick="search()">검색</button>
+      <button onclick="clearPage()">초기화</button>
+    </div>
+    <div th:if="${filter}">
+      <p>
+        검색 조건:
+        <span th:text="|${filter} 이 ${condition}을 포함하는 결과|"></span>
+      </p>
+    </div>
+
+    <div id="filterMenu">
+      <label>
+        <input type="radio" name="filter" value="title" checked /> 제목
+      </label>
+      <label>
+        <input type="radio" name="filter" value="username" /> 닉네임
+      </label>
+      <label> <input type="radio" name="filter" value="content" /> 내용 </label>
+    </div>
+    <div class="table-container">
+      <table id="postTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)">
+              제목 <span class="sort-icon" id="icon-0">↕</span>
+            </th>
+            <th onclick="sortTable(1)">
+              작성자 <span class="sort-icon" id="icon-1">↕</span>
+            </th>
+            <th onclick="sortTable(2)">
+              조회수 <span class="sort-icon" id="icon-2">↕</span>
+            </th>
+            <th onclick="sortTable(3)">
+              작성일 <span class="sort-icon" id="icon-3">↕</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <th:block th:each="post : ${posts}">
+            <tr>
+              <td>
+                <a
+                  th:href="@{/post/{postId}(postId=${post.post.postId})}"
+                  th:text="${post.post.title}"
+                  style="color: #007bff; text-decoration: none"
+                  >게시글 제목</a
+                >
+              </td>
+              <td>
+                <a
+                  th:href="@{/user/{userId}(userId=${post.post.userId})}"
+                  th:text="${post.post.username}"
+                  style="color: #007bff; text-decoration: none"
+                  >작성자</a
+                >
+              </td>
+
+              <td th:text="${post.post.view}">조회수</td>
+              <td
+                th:text="${#temporals.format(post.post.created_at, 'yyyy-MM-dd HH:mm')}"
+              >
+                작성일
+              </td>
+              <td>
+                <img
+                  th:if="${post.img != null}"
+                  th:src="'data:image/jpeg;base64,' + ${post.img}"
+                  alt="게시글 이미지"
+                />
+              </td>
+            </tr>
+          </th:block>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>

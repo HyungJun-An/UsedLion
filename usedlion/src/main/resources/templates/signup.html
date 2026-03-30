@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}"
+      th:with="hideHeader=true, hideFooter=true">
+
+<head>
+    <title>회원가입</title>
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script>
+        function execDaumPostcode() {
+            const elementLayer = document.getElementById('postcodeLayer');
+
+            new daum.Postcode({
+                oncomplete: function(data) {
+                    const region = data.sido + ' ' + data.sigungu;
+                    let fullAddress = data.address;
+                    if (data.buildingName !== '') {
+                        fullAddress += ' ' + data.buildingName;
+                    }
+
+                    document.getElementById("region").value = region;
+
+                    elementLayer.style.display = 'none';
+                },
+                width: '100%',
+                height: '100%'
+            }).embed(elementLayer);
+
+            elementLayer.style.display = 'block';
+        }
+
+        window.addEventListener("DOMContentLoaded", function () {
+            const form = document.querySelector("form");
+            form.addEventListener("submit", function (e) {
+                const regionInput = document.getElementById("region");
+                if (!regionInput.value.trim()) {
+                    e.preventDefault();
+                    alert("지역을 선택해주세요.");
+                    regionInput.focus();
+                }
+            });
+        });
+
+        // Hide postcode box if user clicks outside of it
+        window.addEventListener("click", function (e) {
+            const layer = document.getElementById("postcodeLayer");
+            if (!layer.contains(e.target) && e.target.id !== "region") {
+                layer.style.display = "none";
+            }
+        });
+    </script>
+</head>
+
+<body class="login-body">
+<!-- Hide header and footer -->
+<div layout:fragment="content">
+
+    <div class="d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+        <div class="glass-card d-flex flex-column align-items-center p-4">
+
+        <!-- Logo -->
+        <img src="/static/assets/img/logo-usedlion.png"
+             srcset="/static/assets/img/logo-usedlion@2x.png 2x"
+             alt="UsedLion Logo"
+             class="lion-logo mb-4"
+             style="max-width: 300px; height: auto;">
+
+        <!-- Signup Box -->
+        <div style="width: 100%; max-width: 400px;">
+            <form th:action="@{/signup}" th:object="${user}" method="post">
+                <input type="email" th:field="*{email}" class="lion-input mb-3" placeholder="이메일" required>
+                <div th:if="${#fields.hasErrors('email')}" class="text-danger mb-2" th:errors="*{email}"></div>
+
+                <input type="password" th:field="*{password}" class="lion-input mb-3" placeholder="비밀번호" required>
+                <div th:if="${#fields.hasErrors('password')}" class="text-danger mb-2" th:errors="*{password}"></div>
+
+                <input type="text" th:field="*{username}" class="lion-input mb-3" placeholder="username" required>
+                <div th:if="${#fields.hasErrors('username')}" class="text-danger mb-2" th:errors="*{username}"></div>
+
+                <input type="text" th:field="*{nickname}" class="lion-input mb-3" placeholder="닉네임" required>
+                <div th:if="${#fields.hasErrors('nickname')}" class="text-danger mb-2" th:errors="*{nickname}"></div>
+
+
+                <input type="text" id="region" name="region" th:field="*{region}" class="lion-input mb-3" placeholder="지역 (예: 서울특별시 강남구)" onclick="execDaumPostcode()" readonly required>
+                <!--<input type="text" id="fullAddress" name="fullAddress" th:field="*{fullAddress}" class="lion-input mb-3" placeholder="도로명 주소" readonly required>-->
+                <div id="postcodeLayer" style="display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);z-index:1000;width:400px;height:500px;border:1px solid #ccc;background:#fff;"></div>
+
+
+
+                <button type="submit" class="lion-button w-100 mb-3">회원가입</button>
+            </form>
+            <div class="text-center mt-3">
+                <a href="/" class="text-muted text-decoration-none">돌아가기</a>
+            </div>
+        </div>
+
+        </div> <!-- glass-card -->
+    </div> <!-- full height center wrapper -->
+
+</div>
+</body>
+</html>

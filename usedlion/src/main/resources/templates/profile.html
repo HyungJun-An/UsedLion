@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html
+  lang="ko"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}"
+>
+  <head>
+    <title th:text="${user.username} + ' 프로필'">내 프로필</title>
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script>
+      function execDaumPostcode() {
+        const elementLayer = document.getElementById("postcodeLayer");
+
+        new daum.Postcode({
+          oncomplete: function (data) {
+            const region = data.sido + " " + data.sigungu;
+            document.getElementById("region").value = region;
+            elementLayer.style.display = "none";
+          },
+          width: "100%",
+          height: "100%",
+        }).embed(elementLayer);
+
+        elementLayer.style.display = "block";
+      }
+
+      // Hide postcode box if user clicks outside of it
+      window.addEventListener("click", function (e) {
+        const layer = document.getElementById("postcodeLayer");
+        if (!layer.contains(e.target) && e.target.id !== "region") {
+          layer.style.display = "none";
+        }
+      });
+
+      function enableField(id) {
+        const field = document.getElementById(id);
+        field.removeAttribute("readonly");
+        field.focus();
+      }
+    </script>
+  </head>
+
+  <body>
+    <div layout:fragment="content" class="container mt-5">
+      <div class="glass-card d-flex flex-column align-items-center p-4">
+        <div
+          class="d-flex justify-content-between align-items-center w-100 mb-4"
+        >
+          <h2 th:text="${user.username} + '\'s 프로필'">내 프로필</h2>
+          <a
+            href="/user/{userId}"
+            th:href="@{/user/{userId}(userId=${user.id})}"
+            class="btn btn-primary ms-3"
+            >게시글 정보보기</a
+          >
+        </div>
+        <div th:if="${param.success}" class="alert alert-success">
+          프로필이 성공적으로 수정되었습니다!
+        </div>
+        <div class="card p-4" style="max-width: 500px">
+          <div class="mb-3">
+            <label class="form-label">이메일</label>
+            <input
+              type="text"
+              th:value="${user.email}"
+              class="form-control"
+              readonly
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">로그인 방식</label>
+            <input
+              type="text"
+              th:value="${user.provider}"
+              class="form-control"
+              readonly
+            />
+          </div>
+
+          <form th:action="@{/update-profile}" method="post">
+            <div class="mb-3">
+              <label class="form-label">닉네임</label>
+              <input
+                type="text"
+                th:value="${user.nickname}"
+                name="nickname"
+                id="nickname"
+                class="lion-input"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">지역</label>
+              <input
+                type="text"
+                id="region"
+                name="region"
+                th:value="${user.region}"
+                class="lion-input"
+                onclick="execDaumPostcode()"
+              />
+            </div>
+            <div
+              id="postcodeLayer"
+              style="
+                display: none;
+                position: fixed;
+                top: 20%;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 1000;
+                width: 400px;
+                height: 500px;
+                border: 1px solid #ccc;
+                background: #fff;
+              "
+            ></div>
+
+            <button type="submit" class="btn btn-primary">수정</button>
+          </form>
+          <div class="mt-5" style="height: 50px"></div>
+        </div>
+      </div>
+      <div class="mt-5" style="height: 50px"></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}" xmlns:layout="http://www.w3.org/1999/xhtml">
+<head>
+  <title>중고로사자 광장</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #fef1e6;
+      font-family: "Segoe UI", sans-serif;
+    }
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: start;
+    }
+    .card {
+      width: 100%;
+      max-width: 300px;
+      flex-grow: 1;
+    }
+    .report-warning {
+      background-color: #ffe58f;
+    }
+    .report-danger {
+      background-color: #ff9ca5;
+    }
+    .report-critical {
+      background-color: #972833;
+      color: white;
+    }
+    .report-none {
+      background-color: #b6f6c5;
+    }
+    @media (max-width: 768px) {
+      .card-container {
+        justify-content: center;
+      }
+    }
+    #filterMenu {
+      display: none;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 1rem;
+      position: absolute;
+      z-index: 1000;
+    }
+    #filterMenu label {
+      display: block;
+      padding: 6px 0;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1050;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      width: 90%;
+      max-width: 400px;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("filterToggle").addEventListener("click", function () {
+        const filterMenu = document.getElementById("filterMenu");
+        filterMenu.style.display = filterMenu.style.display === "none" ? "block" : "none";
+      });
+
+      const filterInputs = document.querySelectorAll('input[name="filter"]');
+      filterInputs.forEach((input) => {
+        input.addEventListener("change", function () {
+          document.getElementById("filterMenu").style.display = "none";
+        });
+      });
+
+      document.addEventListener("click", function (event) {
+        const filterMenu = document.getElementById("filterMenu");
+        const filterToggle = document.getElementById("filterToggle");
+        if (!filterMenu.contains(event.target) && event.target !== filterToggle) {
+          filterMenu.style.display = "none";
+        }
+      });
+
+      document.getElementById("regionButton").addEventListener("click", function () {
+        document.getElementById("regionModal").style.display = "block";
+      });
+    });
+
+    function search() {
+      const searchInput = document.getElementById("searchInput").value;
+      const selectedFilter = document.querySelector('input[name="filter"]:checked');
+      const region = document.getElementById("hiddenRegion").value;
+
+      let queryParams = [];
+
+      if (selectedFilter && searchInput.trim() !== "") {
+        queryParams.push(`${selectedFilter.value}=${encodeURIComponent(searchInput)}`);
+        if (region) {
+          queryParams.push(`region=${encodeURIComponent(region)}`);
+        }
+        window.location.href = `/post/search/detail?${queryParams.join("&")}`;
+      } else {
+        alert("검색어를 입력하세요");
+      }
+    }
+
+    function clearPage() {
+      document.getElementById("searchInput").value = "";
+      document.querySelectorAll('input[name="filter"]').forEach(input => input.checked = false);
+      window.location.href = "/dashboard";
+    }
+
+    function closeModal() {
+      document.getElementById("regionModal").style.display = "none";
+    }
+
+    function applyRegion() {
+      const region = document.getElementById("regionInput").value.trim();
+      if (region) {
+        const searchInput = document.getElementById("searchInput").value;
+        const selectedFilter = document.querySelector('input[name="filter"]:checked');
+        let query = "";
+        if (selectedFilter && searchInput) {
+          query += `${selectedFilter.value}=${encodeURIComponent(searchInput)}&`;
+        }
+        query += `region=${encodeURIComponent(region)}`;
+        window.location.href = `/post/search/detail?${query}`;
+      }
+      closeModal();
+    }
+  </script>
+</head>
+<body layout:fragment="content">
+<div class="container my-4">
+  <h2 class="mb-4">📦 중고로사자 광장</h2>
+  <a th:href="@{/post/create}" class="btn btn-primary mb-3">➕ 게시글 작성</a>
+
+  <div class="search-container mb-4 d-flex flex-wrap align-items-center gap-2">
+    <button class="btn btn-outline-secondary" id="regionButton">📍 지역</button>
+    <div id="regionModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h5>지역 입력</h5>
+        <input type="text" class="form-control my-2" id="regionInput" placeholder="지역명을 입력하세요" />
+        <button class="btn btn-primary w-100" onclick="applyRegion()">적용</button>
+      </div>
+    </div>
+    <input type="hidden" id="hiddenRegion" th:value="${region != null ? region : ''}" />
+    <button class="btn btn-outline-secondary" id="filterToggle">🔍 조건</button>
+    <input type="text" class="form-control" id="searchInput" placeholder="검색어 입력" />
+    <button class="btn btn-primary" onclick="search()">검색</button>
+    <button class="btn btn-outline-danger" onclick="clearPage()">초기화</button>
+  </div>
+
+  <div id="filterMenu">
+    <label><input type="radio" name="filter" value="title" checked /> 제목</label>
+    <label><input type="radio" name="filter" value="username" /> 닉네임</label>
+    <label><input type="radio" name="filter" value="content" /> 내용</label>
+  </div>
+
+  <div class="card-container">
+    <div th:each="post : ${posts}"
+         th:class="'card ' + (${post.reportCount} != null ? (${post.reportCount} >= 30 ? 'report-critical' : (${post.reportCount} >= 20 ? 'report-danger' : (${post.reportCount} >= 10 ? 'report-warning' : 'report-none'))) : 'report-none')">
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title">
+          <a th:href="@{/post/{postId}(postId=${post.post.postId})}" th:text="${post.post.title}" style="text-decoration: none; color: #2200ff;"> 제목 </a>
+        </h5>
+        <p class="card-text mb-1">
+          <strong>작성자:</strong>
+          <a th:href="@{/user/{userId}(userId=${post.post.userId})}" th:text="${post.post.username}" class="text-dark text-decoration-none">닉네임</a>
+        </p>
+        <p class="card-text mb-1"><strong>가격:</strong> <span th:text="|${post.post.price}원|">가격</span></p>
+        <p class="card-text mb-1"><strong>지역:</strong> <span th:text="${post.post.region}">지역</span></p>
+        <p class="card-text mb-1"><strong>상태:</strong>
+          <span th:switch="${post.post.status.name()}">
+            <span th:case="'ONSALE'">판매중</span>
+            <span th:case="'RESERVED'">예약중</span>
+            <span th:case="'SOLDOUT'">판매완료</span>
+            <span th:case="*">알 수 없음</span>
+          </span>
+        </p>
+        <p class="card-text text-muted mt-auto" style="font-size: 0.9rem;" th:text="${#temporals.format(post.post.created_at, 'yyyy-MM-dd HH:mm')}">작성일</p>
+      </div>
+      <div class="card-footer bg-transparent border-0 p-2" th:if="${post.img != null}">
+        <img th:src="'data:image/jpeg;base64,' + ${post.img}" class="img-fluid rounded" style="max-height: 120px;" alt="쎘바리" />
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

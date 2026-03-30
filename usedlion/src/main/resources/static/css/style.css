@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap');
+
+/* ------------------------------
+   Global Reset & Base Styles
+------------------------------ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bs-font-sans-serif: 'Nanum Gothic', sans-serif;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--bs-font-sans-serif);
+  background-color: #fef7eb;
+  color: #333;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  overscroll: none;
+}
+
+/* Wrapper to allow sticky footer */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-container {
+  flex: 1;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}
+
+/* ------------------------------
+   Header
+------------------------------ */
+header {
+  width: 100%;
+  background-color: #fff3e6;
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: padding 0.3s ease;
+}
+
+header.shrink {
+  padding: 0.5rem 2rem;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #d17b0f;
+}
+
+.custom-brand{
+  color: rgb(74,45.14);
+}
+
+.navbar-links a {
+  margin-left: 1rem;
+  text-decoration: none;
+  color: #444;
+  font-weight: 500;
+}
+
+/* ------------------------------
+   Login Page
+------------------------------ */
+.login-body {
+  background-color: #fef7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.center-wrapper {
+  text-align: center;
+  padding: 2rem;
+  width: 100%;
+}
+
+.lion-logo {
+  max-width: 500px;
+  width: 100%;
+  object-position: center top;
+  margin: 0 auto 1rem auto;
+}
+
+.input-group {
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.lion-input {
+  background-color: rgb(255, 201, 154);
+  color: rgb(144, 144, 144);
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 0.75rem 1rem;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lion-input:focus {
+  border-color: #ff9900;
+  outline: none;
+  box-shadow: 0 0 5px rgba(255, 153, 0, 0.3);
+}
+
+.lion-button {
+  background-color: rgb(124, 124, 124);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 0.75rem 1rem;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  cursor: pointer;
+}
+
+.lion-button:hover {
+  background-color: #ff9900;     /* orange highlight */
+  border-color: #ff9900;         /* optional: match the border */
+  color: #fff;                   /* keep white text */
+  text-decoration: none;         /* remove underline from <a> */
+  box-shadow: 0 0 8px rgba(255, 153, 0, 0.4); /* glow effect */
+}
+
+/* ------------------------------
+   Google-Login
+------------------------------ */
+.google-btn {
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.1s ease-in-out, box-shadow 0.2s;
+}
+
+.google-btn:hover {
+  transform: scale(1.02);
+}
+
+/* ------------------------------
+   Signup Page
+------------------------------ */
+.glass-card {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 500px;
+}
+
+/* ------------------------------
+   Footer
+------------------------------ */
+.footer {
+  width: 100%;
+  background-color: #fff3e6;
+  padding: 2rem;
+  font-size: 0.85rem;
+  color: #333;
+  border-top: 1px solid #eee;
+}
+
+.footer-content {
+  max-width: 1024px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.footer-company {
+  line-height: 1.6;
+  text-align: left;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-weight: 500;
+}
+
+.footer-links a {
+  color: #333;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------
+   Media Queries
+------------------------------ */
+@media (max-width: 600px) {
+  .lion-logo {
+    max-width: 300px;
+  }
+
+  .input-group {
+    width: 90%;
+  }
+
+  .footer-content {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .footer-content {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+
+/* --------------------------------
+post
+-------------------------------- */
+.post-condition-button {
+  background-color: rgb(124, 124, 124);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: bold;
+  padding: 0.75rem 1rem;
+  border: 2px solid #ccc;
+  border-radius: 3px;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.05);
+  width: 80px;
+  cursor: pointer;
+  margin-right : 10px;
+  text-align : center;
+}
+
+.post-condition-button:hover {
+  background-color: #ff9900;     /* orange highlight */
+  border-color: #ff9900;         /* optional: match the border */
+  color: #fff;                   /* keep white text */
+  text-decoration: none;         /* remove underline from <a> */
+  box-shadow: 0 0 8px rgba(255, 153, 0, 0.4); /* glow effect */
+}

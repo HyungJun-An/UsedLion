@@ -1,0 +1,42 @@
+# === Application secrets ===
+src/main/resources/application.properties
+src/main/resources/application.yml
+*.env
+
+# === Build output ===
+/build/
+/out/
+
+# === Gradle ===
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+
+# === IDEs ===
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# === OS-generated files ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
+
+# === Runtime files ===
+*.pid
+*.hprof
+
+# === Test and coverage reports ===
+/test-output/
+/coverage/
+/jacoco.exec
+
+# === Generated files ===
+target/
+bin/
+
+# === VS Code (if anyone uses it) ===
+.vscode/

@@ -9,6 +9,7 @@
 *.iml
 out/
 
+.vscode
 # Maven
 target/
 
@@ -24,7 +25,6 @@ yarn-error.log
 
 # Environment files
 .env
-
 # Logs
 logs/
 *.log

@@ -1,0 +1,228 @@
+<th:block xmlns:th="http://www.thymeleaf.org"
+          xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+          th:fragment="reply(node, depth, postId,userId)">
+
+<style>
+            /* 댓글 컨테이너 */
+            .reply-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 14px;
+              margin-bottom: 8px;
+              border-bottom: 1px solid #f1f1f1;
+              padding-bottom: 8px;
+            }
+
+            .reply-header a {
+              color: #007bff;
+              text-decoration: none;
+
+            }
+
+            .reply-header a:hover {
+              text-decoration: underline;
+            }
+
+            .reply-header button {
+              background-color: #007bff;
+              color: white;
+              padding: 5px 10px;
+              font-size: 12px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              transition: background-color 0.3s ease;
+            }
+
+            .reply-header button:hover {
+              background-color: #0056b3;
+            }
+
+            .reply-content {
+              font-size: 16px;
+              line-height: 1.6;
+              margin-bottom: 12px;
+              color: #333;
+              /* font-weight: bold; */ /* Remove bold styling */
+            }
+
+            /* 대댓글 스타일 (들여쓰기) */
+            .reply-content {
+              margin-left: 20px;
+              padding-left: 10px;
+              border-left: 2px solid #ccc;
+            }
+
+            /* 모달 기본 스타일 */
+            .my-modal {
+              display: none;
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background: white;
+              padding: 20px;
+              border-radius: 8px;
+              box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+              z-index: 1000;
+              width: 400px;
+              max-width: 90%;
+              box-sizing: border-box;
+            }
+
+            /* 모달 배경 */
+            #modalBackdrop {
+              display: none;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.5);
+              z-index: 999;
+            }
+
+            .modal h3 {
+              font-size: 18px;
+              margin-bottom: 12px;
+            }
+
+            .modal textarea {
+              width: 100%;
+              padding: 10px;
+              font-size: 14px;
+              margin-bottom: 20px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              box-sizing: border-box;
+              resize: none;
+            }
+
+            .modal button {
+              background-color: #007bff;
+              color: white;
+              padding: 8px 16px;
+              font-size: 14px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              transition: background-color 0.3s ease;
+            }
+
+            .modal button:hover {
+              background-color: #0056b3;
+            }
+
+            .modal button[type="button"] {
+              background-color: #ccc;
+            }
+
+            .modal button[type="button"]:hover {
+              background-color: #999;
+            }
+
+            /* 대댓글 작성 폼 */
+            form input[type="text"] {
+              width: 100%;
+              padding: 10px;
+              font-size: 14px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              margin-bottom: 10px;
+              box-sizing: border-box;
+            }
+
+            form button {
+              background-color: #28a745;
+              color: white;
+              padding: 8px 16px;
+              font-size: 14px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              transition: background-color 0.3s ease;
+            }
+
+            form button:hover {
+              background-color: #218838;
+            }
+          </style>
+  <div th:style="'margin-left:' + (${depth} * 40) + 'px'">
+
+    <!-- 1) 메타 정보 (헤더) -->
+    <div class="reply-header">
+      <strong>
+        <a th:href="@{/user/{userId}(userId=${node.reply.userId})}"
+           th:text="${node.reply.username}">작성자</a>
+      </strong>
+      <a>
+        <span th:text="${#temporals.format(node.reply.created_at,'yyyy-MM-dd HH:mm')}">날짜</span>
+      </a>
+      <button th:if="${session.user != null and node.reply.email != session.user.email}" type="button"
+              th:onclick="'openReportModal(' + ${node.reply.id} + ')'">
+        신고
+      </button>
+
+      <th:block th:if="${session.user != null and node.reply.email == session.user.email}">
+        <button type="button"
+                th:onclick="'openEditModal(' + ${node.reply.id} + ')'">
+          수정
+        </button>
+        <button type="button"
+                th:onclick="'openDeleteModal(' + ${node.reply.id} + ')'">
+          삭제
+        </button>
+      </th:block>
+    </div>
+
+    <!-- 2) 댓글 본문 -->
+    <div class="reply-content">
+      <p th:text="${node.reply.content}">댓글 내용</p>
+    </div>
+
+    <!-- 3) 신고 모달 -->
+    <div th:id="'reportModal-' + ${node.reply.id}" class="my-modal">
+      <form th:action="@{/report/{postId}/{userId}(postId=${postId},userId=${node.reply.userId})}" method="post">
+        <h5 class="mb-3">🚨 신고 사유 입력</h5>
+        <textarea name="reason" rows="4" class="form-control mb-3" placeholder="신고 내용을 입력해주세요." required></textarea>
+        <div class="d-flex justify-content-end gap-2">
+          <button type="submit" class="btn btn-danger">제출</button>
+          <button type="button" th:onclick="'closeModal(\'reportModal-' + ${node.reply.id} + '\')'">취소</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 4) 수정 모달 -->
+    <div th:id="'editModal-' + ${node.reply.id}" class="my-modal">
+      <form th:action="@{/reply/edit/{replyId}(replyId=${node.reply.id})}" method="post">
+        <h3>댓글 수정</h3>
+        <textarea name="content" rows="3" cols="40" th:text="${node.reply.content}" required></textarea><br><br>
+        <button type="submit">수정완료</button>
+        <button type="button" th:onclick="'closeModal(\'editModal-' + ${node.reply.id} + '\')'">취소</button>
+      </form>
+    </div>
+
+    <!-- 5) 삭제 모달 -->
+    <div th:id="'deleteModal-' + ${node.reply.id}" class="my-modal">
+      <p>정말 이 댓글을 삭제하시겠습니까?</p>
+      <form th:action="@{/reply/delete/{replyId}(replyId=${node.reply.id})}" method="post">
+        <button type="submit">삭제</button>
+        <button type="button" th:onclick="'closeModal(\'deleteModal-' + ${node.reply.id} + '\')'">취소</button>
+      </form>
+    </div>
+
+    <!-- 6) 대댓글 입력 폼 -->
+    <form th:action="@{/reply/{postId}/{parentReplyId}(postId=${postId}, parentReplyId=${node.reply.id})}" method="post">
+      <input type="text" name="content" placeholder="대댓글을 입력하세요" required />
+      <button type="submit">답글</button>
+    </form>
+
+  </div>
+
+  <!-- 자식 댓글 재귀 호출 -->
+  <th:block th:if="${node.children}" th:each="child : ${node.children}">
+    <div th:replace="~{replyNode :: reply(${child}, ${depth + 1}, ${postId},${userId})}"></div>
+  </th:block>
+</th:block>
+

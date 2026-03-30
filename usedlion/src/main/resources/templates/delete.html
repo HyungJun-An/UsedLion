@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <title>댓글 노드</title>
+    <style>
+      /* 공통 백드롭 */
+      #modalBackdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+      }
+      /* 모달 기본 스타일 */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #fff;
+        padding: 20px;
+        border: 1px solid #ccc;
+        z-index: 1000;
+      }
+    </style>
+    <script>
+      function openReportModal(id) {
+        document.getElementById("reportModal-" + id).style.display = "block";
+        document.getElementById("modalBackdrop").style.display = "block";
+      }
+      function closeReportModal(id) {
+        document.getElementById("reportModal-" + id).style.display = "none";
+        document.getElementById("modalBackdrop").style.display = "none";
+      }
+      function openEditModal(id) {
+        fetch(`/reply/edit/${id}`)
+          .then((res) => res.text())
+          .then((html) => {
+            document.getElementById("modalContainer").innerHTML = html;
+            document.getElementById("editModal").style.display = "block";
+            document.getElementById("modalBackdrop").style.display = "block";
+          });
+      }
+      function openDeleteModal(id) {
+        fetch(`/reply/delete/${id}?confirm=true`)
+          .then((res) => res.text())
+          .then((html) => {
+            document.getElementById("modalContainer").innerHTML = html;
+            document.getElementById("deleteModal").style.display = "block";
+            document.getElementById("modalBackdrop").style.display = "block";
+          });
+      }
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+        document.getElementById("modalBackdrop").style.display = "none";
+      }
+    </script>
+  </head>
+  <body>
+    <!-- AJAX로 로드된 모달을 붙일 곳 -->
+    <div id="modalContainer"></div>
+    <!-- 공통 백드롭 -->
+    <div id="modalBackdrop"></div>
+
+    <!-- 댓글 프래그먼트 -->
+    <th:block th:fragment="reply(node, depth, postId)">
+      <div th:style="'margin-left:' + (${depth} * 40) + 'px'">
+        <!-- 댓글 본문 + 수정·삭제 버튼 -->
+        <p>
+          <strong>
+            <a
+              th:href="@{/user/{profileId}(profileId=${node.reply.profileId})}"
+              th:text="${node.reply.username}"
+              >작성자</a
+            >
+          </strong>
+          <span
+            th:text="${#temporals.format(node.reply.date, 'yyyy-MM-dd HH:mm')}"
+            >날짜</span
+          >
+          <button
+            type="button"
+            th:onclick="'openReportModal(' + ${node.reply.id} + ')'"
+          >
+            신고하기
+          </button>
+          <br /><br />
+          <strong th:text="${node.reply.content}">댓글 내용</strong>
+          <sec:authorize access="isAuthenticated()">
+            <th:block
+              th:if="${#authentication.principal.username == node.reply.username}"
+            >
+              <!-- 수정 -->
+              <button
+                type="button"
+                th:onclick="'openEditModal(' + ${node.reply.id} + ')'"
+              >
+                수정
+              </button>
+              <!-- 삭제 (inline) -->
+              <form
+                th:action="@{/reply/delete/{id}(id=${node.reply.id})}"
+                method="post"
+                style="display: inline"
+                sec:csrf
+              >
+                <button
+                  type="submit"
+                  onclick="return confirm('정말 삭제하시겠습니까?')"
+                >
+                  삭제
+                </button>
+              </form>
+            </th:block>
+          </sec:authorize>
+        </p>
+
+        <!-- 대댓글 입력 폼 (별도 블록) -->
+        <div>
+          <form
+            th:action="@{/reply/{postId}/{parentReplyId}(postId=${postId}, parentReplyId=${node.reply.id})}"
+            method="post"
+            sec:csrf
+          >
+            <input
+              type="text"
+              name="content"
+              placeholder="대댓글을 입력하세요"
+              required
+            />
+            <button type="submit">댓글 달기</button>
+          </form>
+        </div>
+
+        <!-- 신고 모달 (댓글별 고유 ID) -->
+        <div th:id="'reportModal-' + ${node.reply.id}" class="modal">
+          <form
+            th:action="@{/report/{postId}/{profileId}(postId=${postId}, profileId=${node.reply.profileId})}"
+            method="post"
+            sec:csrf
+          >
+            <h3>신고 사유 입력</h3>
+            <textarea
+              name="reason"
+              rows="4"
+              cols="40"
+              placeholder="내용"
+              required
+            ></textarea>
+            <br /><br />
+            <button type="submit">제출</button>
+            <button
+              type="button"
+              th:onclick="'closeReportModal(' + ${node.reply.id} + ')'"
+            >
+              취소
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 자식 댓글 재귀 -->
+      <th:block
+        th:if="${node.children != null}"
+        th:each="child : ${node.children}"
+      >
+        <div
+          th:replace="~{replyNode :: reply(${child}, ${depth + 1}, ${postId})}"
+        ></div>
+      </th:block>
+    </th:block>
+
+    <!-- 수정 모달 프래그먼트 (AJAX로 로드) -->
+    <th:block th:fragment="editModal(reply)">
+      <div id="editModal" class="modal">
+        <form
+          th:action="@{/reply/edit/{id}(id=${reply.id})}"
+          method="post"
+          sec:csrf
+        >
+          <h3>댓글 수정</h3>
+          <textarea
+            name="content"
+            rows="4"
+            required
+            th:text="${reply.content}"
+          ></textarea>
+          <br /><br />
+          <button type="submit">수정완료</button>
+          <button type="button" onclick="closeModal('editModal')">취소</button>
+        </form>
+      </div>
+    </th:block>
+
+    <!-- 삭제 확인 모달 프래그먼트 (AJAX로 로드) -->
+    <th:block th:fragment="deleteModal(reply)">
+      <div id="deleteModal" class="modal">
+        <form
+          th:action="@{/reply/delete/{id}(id=${reply.id})}"
+          method="post"
+          sec:csrf
+        >
+          <h3>댓글 삭제</h3>
+          <p>정말 삭제하시겠습니까?</p>
+          <button type="submit">삭제</button>
+          <button type="button" onclick="closeModal('deleteModal')">
+            취소
+          </button>
+        </form>
+      </div>
+    </th:block>
+  </body>
+</html>

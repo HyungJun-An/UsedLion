@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!-- editForm 프래그먼트 -->
+<th:block th:fragment="editForm (reply)">
+  <div th:id="'editModal-' + ${reply.replyId}" class="modal">
+    <h3>댓글 수정</h3>
+    <form th:action="@{/reply/edit/{replyId}(
+                      replyId=${reply.replyId})}"
+          method="post">
+        <textarea name="content"
+                  rows="3" cols="40"
+                  th:text="${reply.content}"
+                  required></textarea><br><br>
+      <button type="submit">수정완료</button>
+      <button type="button"
+              th:onclick="'closeModal(\'editModal-' + ${reply.replyId} + '\')'">
+        취소
+      </button>
+    </form>
+  </div>
+</th:block>
+</html>
