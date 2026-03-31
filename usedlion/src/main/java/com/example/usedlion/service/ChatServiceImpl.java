@@ -15,9 +15,12 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 
 @Log4j2
 @Component
@@ -35,6 +38,23 @@ public class ChatServiceImpl extends TextWebSocketHandler implements ChatService
     
     // 세션 ID와 roomId 매핑
     private final Map<String, String> sessionRoomIdMap = new ConcurrentHashMap<>();
+
+    // 브로드캐스트 전용 스레드 풀 (CPU 코어 수 × 2 — I/O 바운드 작업 기준)
+    private final ExecutorService broadcastExecutor =
+            Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+
+    // 벤치마크용 플래그: true = 개선 전 순차 처리, false = 개선 후 병렬 처리 (기본값)
+    @Value("${chat.broadcast.legacy:false}")
+    private boolean legacyBroadcast;
+
+    // 벤치마크용 세션당 인위적 지연 (ms) — 실제 네트워크 레이턴시 시뮬레이션 (기본 0 = 비활성)
+    @Value("${chat.broadcast.simulated.delay.ms:0}")
+    private int simulatedDelayMs;
+
+    @PreDestroy
+    public void shutdownExecutor() {
+        broadcastExecutor.shutdown();
+    }
 
     // ID -> nickname 매핑 (G1)
     private final UserInformationRepository userInformationRepository;
@@ -124,7 +144,7 @@ public class ChatServiceImpl extends TextWebSocketHandler implements ChatService
             String type = (String) messageMap.get("type");
             log.info(messageMap.toString());
             if (type == null) {
-                session.sendMessage(new TextMessage("{\"error\": \"type 필드가 누락되었습니다.\"}"));
+                safeSend(session, new TextMessage("{\"error\": \"type 필드가 누락되었습니다.\"}"));
                 return;
             }
 
@@ -148,12 +168,12 @@ public class ChatServiceImpl extends TextWebSocketHandler implements ChatService
                     handlePrivateDeleteMessage(session, messageMap);
                     break;
                 default:
-                    session.sendMessage(new TextMessage("{\"error\": \"알 수 없는 type입니다: " + type + "\"}"));
+                    safeSend(session, new TextMessage("{\"error\": \"알 수 없는 type입니다: " + type + "\"}"));
             }
 
         } catch (Exception e) {
             log.error("메시지 처리 중 오류 발생", e);
-            session.sendMessage(new TextMessage("{\"error\": \"메시지 처리 중 오류가 발생했습니다: " + e.getMessage() + "\"}"));
+            safeSend(session, new TextMessage("{\"error\": \"메시지 처리 중 오류가 발생했습니다: " + e.getMessage() + "\"}"));
         }
     }
 
@@ -201,7 +221,7 @@ public class ChatServiceImpl extends TextWebSocketHandler implements ChatService
 
                 broadcastToPost(chat.getPostId(),new TextMessage(objectMapper.writeValueAsString(editedMessage)), session);
             } else {
-                session.sendMessage(new TextMessage("{\"error\": \"메시지를 찾을 수 없습니다.\"}"));
+                safeSend(session, new TextMessage("{\"error\": \"메시지를 찾을 수 없습니다.\"}"));
             }
     }
     /**
@@ -322,9 +342,10 @@ public class ChatServiceImpl extends TextWebSocketHandler implements ChatService
                 broadcastToPost(postId, new TextMessage(objectMapper.writeValueAsString(message)), session);
 
                 // 유저 수 전달
+                Set<WebSocketSession> remaining = chatRooms.get(postId);
                 message = new HashMap<>();
                 message.put("type", "STATUS");
-                message.put("count", chatRooms.get(postId).size());
+                message.put("count", remaining != null ? remaining.size() : 0);
 
                 broadcastToPost(postId, new TextMessage(objectMapper.writeValueAsString(message)), session);
             }
@@ -349,9 +370,10 @@ public class ChatServiceImpl extends TextWebSocketHandler implements ChatService
                 broadcastToPrivate(roomId, new TextMessage(objectMapper.writeValueAsString(message)), session);
 
                 // 유저 수 전달
+                Set<WebSocketSession> remainingPrivate = privateRooms.get(roomId);
                 message = new HashMap<>();
                 message.put("type", "STATUS");
-                message.put("count", privateRooms.get(roomId).size());
+                message.put("count", remainingPrivate != null ? remainingPrivate.size() : 0);
 
                 broadcastToPrivate(roomId, new TextMessage(objectMapper.writeValueAsString(message)), session);
             }
@@ -435,38 +457,73 @@ public class ChatServiceImpl extends TextWebSocketHandler implements ChatService
     /**
      * 게시글 채팅방에 메시지 브로드캐스팅
      */
+    /**
+     * 게시글 채팅방에 메시지 브로드캐스팅
+     *
+     * legacyBroadcast=false (기본): CompletableFuture 병렬 전송 — 개선 후
+     * legacyBroadcast=true  (벤치마크): forEach 순차 전송 — 개선 전 동작 재현
+     */
     @Override
     public void broadcastToPost(Integer postId, TextMessage message, WebSocketSession senderSession) {
         Set<WebSocketSession> sessions = chatRooms.get(postId);
-        if (sessions != null) {
-            sessions.forEach(session -> {
-                try {
-                      if(session.isOpen()) {
-                        session.sendMessage(message);
-                    }
-                } catch (IOException e) {
-                    log.error("메시지 전송 실패: {}", session.getId(), e);
-                }
-            });
+        if (sessions == null) return;
+
+        if (legacyBroadcast) {
+            // ── 개선 전: 단일 스레드 순차 순회 (Head-of-Line Blocking 발생) ──
+            sessions.forEach(session -> safeSend(session, message));
+        } else {
+            // ── 개선 후: 세션별 독립 비동기 전송 ──
+            CompletableFuture<?>[] futures = sessions.stream()
+                    .map(session -> CompletableFuture.runAsync(
+                            () -> safeSend(session, message), broadcastExecutor))
+                    .toArray(CompletableFuture[]::new);
+            CompletableFuture.allOf(futures)
+                    .exceptionally(ex -> {
+                        log.error("브로드캐스트 중 오류 발생 postId={}", postId, ex);
+                        return null;
+                    });
         }
     }
+
     /**
-     * 1대1 채팅방 메시지 브로드캐스팅
+     * 1대1 채팅방 메시지 브로드캐스팅 (동일 구조로 개선)
      */
     public void broadcastToPrivate(String roomId, TextMessage message, WebSocketSession senderSession) {
         Set<WebSocketSession> sessions = privateRooms.get(roomId);
-        if (sessions != null) {
-            sessions.forEach(session -> {
-                try {
-                    if(session.isOpen()) {
-                        session.sendMessage(message);
-                    }
-                } catch (IOException e) {
-                    log.error("메시지 전송 실패: {}", session.getId(), e);
+        if (sessions == null) return;
+
+        CompletableFuture<?>[] futures = sessions.stream()
+                .map(session -> CompletableFuture.runAsync(
+                        () -> safeSend(session, message), broadcastExecutor))
+                .toArray(CompletableFuture[]::new);
+
+        CompletableFuture.allOf(futures)
+                .exceptionally(ex -> {
+                    log.error("1대1 브로드캐스트 중 오류 발생 roomId={}", roomId, ex);
+                    return null;
+                });
+    }
+    /**
+     * 세션별 동기화를 보장하는 안전한 메시지 전송
+     */
+    private void safeSend(WebSocketSession session, TextMessage message) {
+        synchronized (session) {
+            try {
+                // 벤치마크 시 네트워크 레이턴시 시뮬레이션 (운영 환경에서는 0ms)
+                if (simulatedDelayMs > 0) {
+                    Thread.sleep(simulatedDelayMs);
                 }
-            });
+                if (session.isOpen()) {
+                    session.sendMessage(message);
+                }
+            } catch (IOException | IllegalStateException e) {
+                log.warn("메시지 전송 실패 (세션={}): {}", session.getId(), e.getMessage());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
+
     /**
      * URI에서 postId 추출
      */
